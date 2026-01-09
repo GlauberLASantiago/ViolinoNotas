@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notas na primeira posição: Violino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F0EBE6; /* Novo fundo: Stone/Areia Suave */
+        }
+
+        .violin-neck {
+            fill: black;
+            stroke: #1a1005;
+            stroke-width: 2;
+        }
+
+        .string {
+            stroke: #F9F9F9;
+            stroke-linecap: round;
+        }
+
+        .string-g { stroke-width: 4; }
+        .string-d { stroke-width: 3; }
+        .string-a { stroke-width: 2; }
+        .string-e { stroke-width: 1; }
+
+        .finger-dot {
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+        
+        .finger-dot:hover {
+            r: 14; 
+        }
+
+        .finger-text {
+            font-family: monospace;
+            font-weight: bold;
+            pointer-events: none;
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+
+        .nut {
+            fill: #8B4513;
+        }
+        
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .note-group {
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            transform-origin: center;
+            transform-box: fill-box;
+        }
+
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-800">
+
+    <!-- Cabeçalho -->
+    <header class="bg-slate-900 text-white p-4 shadow-lg sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                🎻 Notas na primeira posição: Violino
+            </h1>
+        </div>
+    </header>
+
+    <main class="flex-grow p-4 flex flex-col items-center max-w-5xl mx-auto w-full">
+        
+        <!-- Controles -->
+        <div class="bg-white p-6 rounded-xl shadow-sm w-full max-w-2xl mb-6 border border-slate-200">
+            <label for="keySelect" class="block text-sm font-semibold text-slate-600 mb-2">Escolha a Armadura de Clave:</label>
+            <div class="relative">
+                <select id="keySelect" class="block w-full p-3 bg-slate-50 border border-slate-300 text-slate-900 rounded-lg focus:ring-amber-500 focus:border-amber-500 shadow-sm appearance-none">
+                    <!-- Opções geradas via JS -->
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700">
+                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                </div>
+            </div>
+            
+            <div id="keyInfo" class="mt-3 text-sm text-slate-500 flex justify-between items-center bg-slate-100 p-2 rounded">
+                <span id="accidentalDisplay">Acidentes: Nenhum</span>
+                <span class="text-xs font-mono bg-slate-200 px-2 py-1 rounded">1ª Posição</span>
+            </div>
+        </div>
+
+        <!-- Visualização do Braço (Horizontal) -->
+        <div class="relative w-full flex justify-center bg-[#9C9B7A] p-4 rounded-xl shadow-lg border border-slate-200 overflow-x-auto">
+            <svg id="fingerboard" viewBox="0 0 600 300" class="w-full min-w-[500px] max-w-[600px] h-auto select-none">
+                <defs>
+                    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="1" dy="2" stdDeviation="1" flood-color="#000" flood-opacity="0.3"/>
+                    </filter>
+                </defs>
+                
+                <!-- O Braço (Madeira) -->
+                <path d="M 60,60 L 580,50 L 580,250 L 60,240 Z" class="violin-neck" />
+                
+                <!-- A Pestana -->
+                <rect x="50" y="60" width="15" height="180" class="nut" />
+                
+                <!-- Cordas (E A D G) -->
+                <line x1="65" y1="90" x2="580" y2="90" class="string string-e" />
+                <line x1="65" y1="130" x2="580" y2="130" class="string string-a" />
+                <line x1="65" y1="170" x2="580" y2="170" class="string string-d" />
+                <line x1="65" y1="210" x2="580" y2="210" class="string string-g" />
+
+                <!-- Rótulos -->
+                <text x="30" y="90" text-anchor="middle" dominant-baseline="middle" font-weight="bold" fill="#111" font-size="16">Mi</text>
+                <text x="30" y="130" text-anchor="middle" dominant-baseline="middle" font-weight="bold" fill="#111" font-size="16">Lá</text>
+                <text x="30" y="170" text-anchor="middle" dominant-baseline="middle" font-weight="bold" fill="#111" font-size="16">Ré</text>
+                <text x="30" y="210" text-anchor="middle" dominant-baseline="middle" font-weight="bold" fill="#111" font-size="16">Sol</text>
+
+                <!-- Camada de Marcadores e Intervalos -->
+                <g id="markersLayer"></g>
+
+            </svg>
+        </div>
+
+        <!-- Legenda -->
+        <div class="mt-6 flex flex-wrap justify-center gap-6 w-full text-sm max-w-4xl border-t border-slate-300 pt-4">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-500">T = Tom</span>
+                <span class="text-xs font-bold text-slate-500">S = Semitom</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded-full bg-slate-700 border border-white shadow"></div>
+                <span>Nota da Escala</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded border border-dashed border-slate-500 flex items-center justify-center text-xs">0</div>
+                <span>Corda Solta</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded border border-dashed border-slate-500 flex items-center justify-center text-xs">1</div>
+                <span>Dedo Indicador</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded border border-dashed border-slate-500 flex items-center justify-center text-xs">4</div>
+                <span>Dedo Mindinho</span>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="mt-auto py-6 text-center text-slate-600 text-sm font-semibold">
+        <p>Desenvolvido por Glauber Santiago para ajudar violinistas iniciantes - 2026</p>
+    </footer>
+
+    <script>
+        // --- DADOS MUSICAIS ---
+
+        const noteNamesSharp = ['Dó', 'Dó#', 'Ré', 'Ré#', 'Mi', 'Fá', 'Fá#', 'Sol', 'Sol#', 'Lá', 'Lá#', 'Si'];
+        const noteNamesFlat  = ['Dó', 'Réb', 'Ré', 'Mib', 'Mi', 'Fá', 'Solb', 'Sol', 'Láb', 'Lá', 'Sib', 'Si'];
+
+        // Cordas soltas (Ordem: Mi=0, Lá=1, Ré=2, Sol=3 para lógica)
+        const strings = [
+            { name: 'Mi', baseNote: 4, y: 90 },
+            { name: 'Lá', baseNote: 9, y: 130 },
+            { name: 'Ré', baseNote: 2, y: 170 },
+            { name: 'Sol', baseNote: 7, y: 210 }
+        ];
+
+        const keySignatures = [
+            { label: 'Sem Acidentes (Dó Maior / Lá Menor)', majorRoot: 0, minorRoot: 9, accidentals: 'Naturais', useSharps: true },
+            { label: '1 Sustenido (Sol Maior / Mi Menor)', majorRoot: 7, minorRoot: 4, accidentals: 'Fá#', useSharps: true },
+            { label: '2 Sustenidos (Ré Maior / Si Menor)', majorRoot: 2, minorRoot: 11, accidentals: 'Fá#, Dó#', useSharps: true },
+            { label: '3 Sustenidos (Lá Maior / Fá# Menor)', majorRoot: 9, minorRoot: 6, accidentals: 'Fá#, Dó#, Sol#', useSharps: true },
+            { label: '4 Sustenidos (Mi Maior / Dó# Menor)', majorRoot: 4, minorRoot: 1, accidentals: 'Fá#, Dó#, Sol#, Ré#', useSharps: true },
+            { label: '5 Sustenidos (Si Maior / Sol# Menor)', majorRoot: 11, minorRoot: 8, accidentals: 'Fá#, Dó#, Sol#, Ré#, Lá#', useSharps: true },
+            { label: '6 Sustenidos (Fá# Maior / Ré# Menor)', majorRoot: 6, minorRoot: 3, accidentals: 'Fá#, Dó#, Sol#, Ré#, Lá#, Mi#', useSharps: true },
+            { label: '1 Bemol (Fá Maior / Ré Menor)', majorRoot: 5, minorRoot: 2, accidentals: 'Sib', useSharps: false },
+            { label: '2 Bemóis (Sib Maior / Sol Menor)', majorRoot: 10, minorRoot: 7, accidentals: 'Sib, Mib', useSharps: false },
+            { label: '3 Bemóis (Mib Maior / Dó Menor)', majorRoot: 3, minorRoot: 0, accidentals: 'Sib, Mib, Láb', useSharps: false },
+            { label: '4 Bemóis (Láb Maior / Fá Menor)', majorRoot: 8, minorRoot: 5, accidentals: 'Sib, Mib, Láb, Réb', useSharps: false },
+            { label: '5 Bemóis (Réb Maior / Sib Menor)', majorRoot: 1, minorRoot: 10, accidentals: 'Sib, Mib, Láb, Réb, Solb', useSharps: false },
+        ];
+
+        const majorScaleIntervals = [0, 2, 4, 5, 7, 9, 11];
+
+        // Posição X da Pestana (início das cordas)
+        const nutX = 65;
+        
+        const semitoneXPositions = [
+            nutX,       // 0 - Solta (Posição física na pestana)
+            nutX + 70,  // 1 semitom
+            nutX + 130, // 2 semitons
+            nutX + 190, // 3 semitons
+            nutX + 245, // 4 semitons
+            nutX + 300, // 5 semitons
+            nutX + 350, // 6 semitons
+            nutX + 400, // 7 semitons
+            nutX + 450  // 8 semitons
+        ];
+
+        const selectEl = document.getElementById('keySelect');
+        const markersLayer = document.getElementById('markersLayer');
+        const accidentalDisplay = document.getElementById('accidentalDisplay');
+
+        keySignatures.forEach((k, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = k.label;
+            selectEl.appendChild(option);
+        });
+
+        function renderFingerboard(keyIndex) {
+            markersLayer.innerHTML = '';
+            
+            keyIndex = parseInt(keyIndex, 10);
+            const sig = keySignatures[keyIndex];
+            accidentalDisplay.textContent = `Acidentes: ${sig.accidentals}`;
+            
+            const scaleNotes = new Set();
+            majorScaleIntervals.forEach(interval => {
+                scaleNotes.add((sig.majorRoot + interval) % 12);
+            });
+
+            strings.forEach((string, index) => {
+                let stringVisibleNotes = []; // Armazenar notas visíveis para desenhar intervalos
+
+                for (let semitone = 0; semitone <= 7; semitone++) {
+                    const currentNoteVal = (string.baseNote + semitone) % 12;
+
+                    if (scaleNotes.has(currentNoteVal)) {
+                        let finger = 0;
+                        if (semitone === 0) {
+                            finger = 0;
+                        } else if (semitone <= 2) {
+                            finger = 1;
+                        } else if (semitone <= 4) {
+                            finger = 2;
+                        } else if (semitone === 5) {
+                            finger = 3;
+                        } else if (semitone === 6) {
+                            // Correção de lógica de dedos para Bemóis vs Sustenidos
+                            finger = sig.useSharps ? 3 : 4;
+                        } else {
+                            finger = 4;
+                        }
+
+                        if (finger === 4 && semitone === 7 && string.name !== 'Mi') {
+                            continue;
+                        }
+
+                        let noteName = sig.useSharps ? noteNamesSharp[currentNoteVal] : noteNamesFlat[currentNoteVal];
+                        
+                        // Correção Enarmônica: 6 Sustenidos (Fá# Maior), nota 5 (F) deve ser Mi#
+                        if (keyIndex === 6 && currentNoteVal === 5) {
+                            noteName = "Mi#";
+                        }
+
+                        let posX = 0;
+
+                        if (finger === 0) {
+                            posX = 57.5; 
+                            drawMarker(posX, string.y, "0", noteName, false);
+                        } else {
+                            posX = semitoneXPositions[semitone];
+                            drawMarker(posX, string.y, finger.toString(), noteName, false);
+                        }
+
+                        // Guardar para o desenho de intervalos
+                        stringVisibleNotes.push({
+                            semitone: semitone,
+                            x: posX,
+                            isOpenString: finger === 0
+                        });
+                    }
+                }
+
+                if (string.name === 'Mi') {
+                    drawIntervals(stringVisibleNotes, string.y, true);
+                } else if (string.name === 'Sol') {
+                    drawIntervals(stringVisibleNotes, string.y, false);
+                }
+            });
+        }
+
+        function drawIntervals(notes, yBase, isTop) {
+            if (notes.length < 2) return;
+            
+            const yLine = isTop ? yBase - 45 : yBase + 45;
+            const yText = isTop ? yLine - 5 : yLine + 12;
+            const tickSize = 5;
+            const tickDir = isTop ? 1 : -1;
+
+            for (let i = 0; i < notes.length - 1; i++) {
+                const n1 = notes[i];
+                const n2 = notes[i+1];
+                
+                const startX = n1.isOpenString ? nutX : n1.x;
+                const endX = n2.x;
+
+                // Calcular diferença em semitons
+                const diff = n2.semitone - n1.semitone;
+                let label = "";
+                if (diff === 1) label = "S";
+                else if (diff === 2) label = "T";
+                else if (diff === 3) label = "TS";
+                else label = "-";
+
+                const pathData = `M ${startX} ${yLine + (tickSize * tickDir)} V ${yLine} H ${endX} V ${yLine + (tickSize * tickDir)}`;
+                
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", pathData);
+                path.setAttribute("fill", "none");
+                // Ajustado para cinza escuro para contraste
+                path.setAttribute("stroke", "#374151"); 
+                path.setAttribute("stroke-width", "1");
+                markersLayer.appendChild(path);
+
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", (startX + endX) / 2);
+                text.setAttribute("y", yText);
+                text.setAttribute("class", "finger-text"); 
+                text.setAttribute("font-size", "11");
+                text.setAttribute("font-weight", "normal");
+                // Ajustado para preto para contraste
+                text.setAttribute("fill", "#111827"); 
+                text.textContent = label;
+                markersLayer.appendChild(text);
+            }
+        }
+
+        function drawMarker(cx, cy, fingerText, noteText, isOpenString) {
+            const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            group.classList.add("note-group");
+            
+            let fillColor = "#334155";
+            let textColor = "#ffffff";
+
+            if (isOpenString) {
+                fillColor = "transparent";
+                textColor = "#64748b"; 
+            }
+
+            if (!isOpenString) {
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", cx);
+                circle.setAttribute("cy", cy);
+                circle.setAttribute("r", 12);
+                circle.setAttribute("class", "finger-dot");
+                circle.setAttribute("fill", fillColor);
+                group.appendChild(circle);
+            }
+
+            if (!isOpenString) {
+                const textFinger = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                textFinger.setAttribute("x", cx);
+                textFinger.setAttribute("y", cy);
+                textFinger.setAttribute("class", "finger-text");
+                textFinger.setAttribute("font-size", "12");
+                textFinger.setAttribute("fill", textColor);
+                textFinger.textContent = fingerText;
+                group.appendChild(textFinger);
+            }
+
+            const textNote = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            textNote.setAttribute("x", cx);
+            textNote.setAttribute("y", isOpenString ? cy - 15 : cy - 20);
+            textNote.setAttribute("class", "finger-text");
+            textNote.setAttribute("font-size", "11");
+            textNote.setAttribute("fill", isOpenString ? textColor : "#475569");
+            textNote.setAttribute("text-anchor", "middle");
+            
+            if (!isOpenString) {
+                textNote.setAttribute("stroke", "white");
+                textNote.setAttribute("stroke-width", "3");
+                textNote.setAttribute("paint-order", "stroke");
+            }
+            
+            textNote.textContent = noteText;
+            group.appendChild(textNote);
+
+            markersLayer.appendChild(group);
+        }
+
+        selectEl.addEventListener('change', (e) => renderFingerboard(e.target.value));
+        
+        selectEl.value = 1; 
+        renderFingerboard(1);
+
+    </script>
+</body>
+</html>
